@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot</title>
+    <link rel="stylesheet" type="text/css" href="/home.css">
+</head>
+<body>
+    <h1 class="h1" style="text-align: center;">Welcome, {{ user.name }}</h1>
+    <div class="sidebar" >
+        <div class="sidebar-title">History</div>
+        <ul id="sidebar-list">
+
+        </ul>
+        <button id="clear-history">Clear</button>
+    </div>
+    
+
+    <div class="chat-container">
+        <div class="chat">
+            <form id="chat-form" method="POST" enctype="multipart/form-data">
+                <div class="user-input">
+                    <input type="file" name="file" id="file-input" accept=".pdf">
+                    <input type="text" name="query" id="query" placeholder="Enter your query">
+                    <div class="buttons">
+                        <button id="submit-button" type="submit">Submit</button>
+                        <button id="clear-button" type="button">Clear</button>
+                    </div>
+                </div>
+            </form>
+            <form id="form" method="POST" enctype="multipart/form-data" action="/saveChatHistory/{{ user.id }}">
+                <div class="messages" name="messages" id="messages"></div>
+                <div class="but" style="margin-bottom: 500px;">
+                    <input type="text" name="title" id="title-input" style="width:250px ;" placeholder="Enter a title if you want to save the chat">
+                    <button id="save-button" style="padding-right: 20px;">Save</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+
+    <button id="toggle-button" >Toggle Sidebar</button>   
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const sidebar = document.querySelector('.sidebar');
+            const sidebarList = document.getElementById("sidebar-list");
+
+            const content = document.querySelector('.chat-container'); 
+            const clearHistoryButton = document.querySelector('#clear-history');
+            const toggleButton = document.querySelector('#toggle-button');
+            const chatForm = document.getElementById("chat-form");
+
+            const fileInput = document.getElementById("file-input");
+            const queryInput = document.getElementById("query");
+            const submitButton = document.getElementById("submit-button");
+            const clearButton = document.getElementById("clear-button");
+
+            const saveButton = document.querySelector('#save-button');
+            const chatMessages = document.querySelector('#messages');
+            const Form = document.getElementById("form");
+            const titleInput = document.getElementById("title-input"); 
+
+            let  You=[];
+            let  Bot=[];
+            const uId = "{{user.id}}";
+            console.log("uId:=============", uId);
+
+            toggleButton.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+                content.classList.toggle('active');
+            });
+
+            function addMessage(sender, message) {
+                const messageDiv = document.createElement("div");
+                messageDiv.textContent = sender + ": " + message;
+                chatMessages.appendChild(messageDiv);
+    
+                if (sender === "Bot") {
+                    chatMessages.appendChild(document.createElement("hr"));
+                    Bot.push("Bot :" + message);
+                } else {
+                    chatMessages.appendChild(document.createElement("br"));
+                    You.push("You :" + message);
+                }
+            }
+
+            chatForm.addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const formData = new FormData(chatForm);
+                const response = await fetch('/submit', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const answerFromFlask = await response.json();
+                console.log(answerFromFlask);
+
+                addMessage("You", answerFromFlask.query);
+                addMessage("Bot", answerFromFlask.answer);
+
+                queryInput.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            });  
+            
+            saveButton.addEventListener("click", async function (event) {
+                event.preventDefault();
+
+                const title = titleInput.value;
+                const message = [You,Bot];
+            
+                const uId = "{{user.id}}";
+
+                fetch(`/alreadyExistTitle/${uId}/${title}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data === "yes") {
+                        // Title already exists, ask for confirmation to override
+                        if (confirm('A chat with this title already exists. Do you want to overwrite it?')) {
+                            // If the user confirms, proceed to override
+                            fetch(`/overrideMessage/${uId}/${title}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ message }),
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log(data); // Log the response from the server
+                                You=[];
+                                Bot=[];
+                                chatMessages.textContent=''
+                                titleInput.value=''
+                                refreshPage();
+                            })
+                            .catch(error => {
+                                console.error(error);
+                            });
+                        }
+                    } else 
+                    {
+                        You=[];
+                        Bot=[];
+                        // Title does not exist, proceed to save as a new entry
+                        fetch(`/saveChatHistory/${uId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ title, message }),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log(data);
+
+                            // Create a list item, anchor element, and delete button
+                            const listItem = document.createElement("li");
+                            const chatTitle = document.createElement("a");
+                            chatTitle.setAttribute("data-title", title);
+                            chatTitle.setAttribute("data-message", message); 
+                            chatTitle.textContent = title;
+
+                            const deleteButton = document.createElement("button");
+                            deleteButton.textContent = "Delete";
+                            deleteButton.addEventListener("click", function() {
+                                const uId = "{{user.id}}";
+                                const titleToDelete = title;
+
+                                fetch(`/deleteChat/${uId}/${titleToDelete}`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log(data);
+                                    listItem.remove();
+                                })
+                                .catch(error => {
+                                    console.error(error);
+                                });
+                            });
+
+                            const date = new Date();
+                            const formattedDate = date.toLocaleString(); 
+
+                            listItem.innerHTML = `${formattedDate} - `;
+                            listItem.appendChild(chatTitle);
+                            listItem.appendChild(deleteButton);
+
+                            sidebarList.appendChild(listItem);
+                            titleInput.value = '';
+                            chatMessages.textContent = '';
+                            fileInput.value='';
+                            You=[];
+                            Bot=[];
+                            refreshPage();
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+            });
+
+            clearButton.addEventListener("click", async function (event) 
+            {
+                event.preventDefault();
+                    titleInput.value = '';
+                    chatMessages.textContent = '';
+                    fileInput.value=''
+                    queryInput.value=''
+                    You=[];
+                    Bot=[];
+
+            })
+
+            function refreshPage() {
+                location.reload(true); // true forces a reload from the server
+                You=[];
+                Bot=[];
+                loadItemsToSidebar();
+            }
+            
+            clearHistoryButton.addEventListener("click", async function (event) {
+                event.preventDefault();
+
+                const uId = "{{user.id}}";
+                const response = await fetch(`/clearSidebar/${uId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    // If the request is successful, clear the sidebar
+                    const sidebarList = document.getElementById("sidebar-list");
+                    sidebarList.innerHTML = '';
+                } else {
+                    // Handle error if needed
+                    console.error('Failed to clear chat history:', response.statusText);
+                }
+            });
+
+           
+            sidebarList.addEventListener("click", (event) => {
+                if (event.target.tagName === "A") {
+                    
+                    const title = event.target.getAttribute("data-title");
+                    const message = JSON.parse(event.target.getAttribute("data-message"));
+
+                    // Display the selected chat title and message
+                    titleInput.value = title;                    
+                    display(message);
+
+                }
+            });
+
+
+            function display(messages) {
+                chatMessages.innerHTML = '';
+
+                // Display the selected chat messages
+                for (let i = 0; i < messages.length; i++) {
+                    const message1 = messages[i].You;
+                    const message2 = messages[i].Bot;
+                    You.push("You :" + message1);
+                    Bot.push("Bot :" + message2);
+
+                    const messageDiv1 = document.createElement("div");
+                    messageDiv1.textContent = `${message1}`;
+                    chatMessages.appendChild(messageDiv1);
+
+                    const brElement = document.createElement("br");
+                    chatMessages.appendChild(brElement); // Add <br> between You and Bot messages
+
+                    const messageDiv2 = document.createElement("div");
+                    messageDiv2.textContent = `${message2}`;
+                    chatMessages.appendChild(messageDiv2);
+
+                    chatMessages.appendChild(document.createElement("hr"));
+                }
+
+                // Scroll to the bottom of the message box
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+
+
+            function loadItemsToSidebar() {
+                const uId = "{{user.id}}";
+
+                fetch(`/savedChats/${uId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({}),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Assuming data is an array of chat history entries
+
+                    data.forEach(chatEntry => {
+                        const listItem = document.createElement("li");
+
+                        const chatTitle = document.createElement("a");
+                        chatTitle.setAttribute("data-title", chatEntry.title);
+                        chatTitle.setAttribute("data-message", JSON.stringify(chatEntry.message)); // Convert to JSON string
+                        chatTitle.textContent = chatEntry.title;
+
+                        const deleteButton = document.createElement("button");
+                        deleteButton.textContent = "Delete";
+                        deleteButton.addEventListener("click", function() {
+                            const uId = "{{user.id}}";
+                            const titleToDelete = chatEntry.title;
+
+                            // Call the endpoint to delete chat history entry
+                            fetch(`/deleteChat/${uId}/${titleToDelete}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log(data);
+                                // Remove the list item from the sidebar if deletion is successful
+                                listItem.remove();
+                            })
+                            .catch(error => {
+                                console.error(error);
+                                // Handle error if needed
+                            });
+                        });
+
+                        const date = chatEntry.date; 
+
+                        listItem.innerHTML = `${date} - `;
+                        listItem.appendChild(chatTitle);
+                        listItem.appendChild(deleteButton);
+
+                        sidebarList.appendChild(listItem);
+                    });
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+            }
+
+            loadItemsToSidebar();
+         
+        });
+
+    </script>
+    </body>
+
+</html>
+
+

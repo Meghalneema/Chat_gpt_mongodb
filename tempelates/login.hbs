@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    
+    <!-- Link to the CSS file using a relative path -->
+    {{!-- <link rel="stylesheet" type="text/css" href="/public/login.css"> --}}
+    <link rel="stylesheet" type="text/css" href="/login.css">
+
+
+</head>
+<body>
+    
+    <form action="/login" method="post" id="login-form">
+        <h2>Login</h2>
+        <input type="text" name="name" id="username" placeholder="Name" required><br><br>
+        <input type="email" name="email" id="mail id" placeholder="Email" required><br><br>
+        <input type="password" name="password" id="password" placeholder="Password" required><br><br>
+        <button type="submit">Login</button><br><br>
+        <a href="/signup">Make a new account</a>
+    </form>
+    
+    {{!-- <script src="script.js"></script> --}}
+
+</body>
+</html>
+
