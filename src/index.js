@@ -39,16 +39,6 @@ admin.initializeApp({
 
 const bucket = admin.storage().bucket();
 
-
-//const serviceAccount = require("C:\Users\HP\Desktop\chatgptpdf-56247-firebase-adminsdk-pyofm-c57d418cf0.json"); // Replace with the path to your Firebase service account key file
-// const serviceAccount = require("C:\\Users\\HP\\Desktop\\chatgptpdf-56247-firebase-adminsdk-pyofm-c57d418cf0.json");
-
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount),
-//   storageBucket: "chatgptpdf-56247.appspot.com",
-// });
-
-
 //==========================================
 app.listen(port,()=>{
     console.log(`port connected and port is running at port no ${port}`);
