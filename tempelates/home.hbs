@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Chatbot</title>
     <link rel="stylesheet" type="text/css" href="/home.css">
+
 </head>
 <body>
     <h1 class="h1" style="text-align: center;">Welcome, {{ user.name }}</h1>
@@ -15,7 +16,6 @@
         <button id="clear-history">Clear</button>
     </div>
     
-
     <div class="chat-container">
         <div class="chat">
             <form id="chat-form" method="POST" enctype="multipart/form-data">
@@ -43,7 +43,9 @@
     <button id="toggle-button" >Toggle Sidebar</button>   
 
     <script>
+        
         document.addEventListener("DOMContentLoaded", function () {
+
             const sidebar = document.querySelector('.sidebar');
             const sidebarList = document.getElementById("sidebar-list");
 
@@ -371,3 +373,39 @@
 </html>
 
 
+
+
+
+{{!--  
+
+<script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js" type="module"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-storage.js" type="module"></script>
+
+
+const firebaseConfig = {
+                apiKey: "AIzaSyBKWeP2650V336kC5sPGVXLI7yf9unDspg",
+                authDomain: "chatgptpdf-56247.firebaseapp.com",
+                projectId: "chatgptpdf-56247",
+                storageBucket: "chatgptpdf-56247.appspot.com",
+                messagingSenderId: "795723220644",
+                appId: "1:795723220644:web:9d7abdebbd4bd3ad414831",
+                measurementId: "G-W1K88EM0Y9"
+            };      
+            
+            firebase.initializeApp(firebaseConfig);
+            const storageRef = firebase.storage().ref();
+
+
+            fileInput.addEventListener("change", (event) => {
+                const file = event.target.files[0];
+                const fileName = file.name;
+                const fileRef = storageRef.child(fileName);
+
+                fileRef.put(file).then((snapshot) => {
+                    console.log("File uploaded to Firebase Storage:", snapshot);
+                });
+            });
+
+
+
+--}}
