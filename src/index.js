@@ -113,19 +113,8 @@ app.post("/login", async (req, res) => {
     }
 });
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, 'uploads/'); 
-    },
-    filename: function (req, file, cb) {
-      const originalname = file.originalname;
-      cb(null, originalname); 
-    },
-  });
-  
-const upload = multer({ storage: storage });
-
 //=============================================
+const upload = multer();  // Remove storage configuration to prevent local storage
 
 app.post("/submit", upload.single('file'), async (req, res) => {
     const data = {
@@ -140,8 +129,8 @@ app.post("/submit", upload.single('file'), async (req, res) => {
     }
   
     try {
-      // Upload the file to Firebase Storage
-      const fileBuffer = fs.readFileSync(data.file.path);
+      // Upload the file directly to Firebase Storage without saving it locally
+      const fileBuffer = data.file.buffer;  // Access the file buffer directly
       const fileBlob = bucket.file(data.file.originalname);
       await fileBlob.save(fileBuffer);
   
@@ -151,13 +140,13 @@ app.post("/submit", upload.single('file'), async (req, res) => {
         expires: "01-01-2024", // Adjust the expiration date as needed
       });
 
-    const flaskResponse = await axios.post("http://localhost:5000/submit", {
+      const flaskResponse = await axios.post("http://localhost:5000/submit", {
         query: data.query,
         filePath: storageUrl[0] // Include the file path in the request
-    });
+      });
 
-    const answerFromFlask = flaskResponse.data;
-    console.log("Successful response from Flask:", answerFromFlask);
+      const answerFromFlask = flaskResponse.data;
+      console.log("Successful response from Flask:", answerFromFlask);
     
       response = answerFromFlask;
       res.json(response);
@@ -165,10 +154,72 @@ app.post("/submit", upload.single('file'), async (req, res) => {
       console.error("Error communicating with Flask:", error);
       res.status(500).send("An error occurred while sending the file to Flask.");
     }
-  });
+});
+
+
+
+
+
+//=============================================
+
+//=============================================
+// 2.
+// app.post("/submit", upload.single('file'), async (req, res) => {
+//     const data = {
+//       query: req.body.query,
+//       file: req.file,
+//     };
+  
+//     if (!data.file) {
+//       console.log("No file uploaded.");
+//       res.status(400).json({ error: "No file uploaded." });
+//       return;
+//     }
+  
+//     try {
+//       // Upload the file to Firebase Storage
+//       const fileBuffer = fs.readFileSync(data.file.path);
+//       const fileBlob = bucket.file(data.file.originalname);
+//       await fileBlob.save(fileBuffer);
+  
+//       // Get the Firebase Storage URL
+//       const storageUrl = await fileBlob.getSignedUrl({
+//         action: "read",
+//         expires: "01-01-2024", // Adjust the expiration date as needed
+//       });
+
+//     const flaskResponse = await axios.post("http://localhost:5000/submit", {
+//         query: data.query,
+//         filePath: storageUrl[0] // Include the file path in the request
+//     });
+
+//     const answerFromFlask = flaskResponse.data;
+//     console.log("Successful response from Flask:", answerFromFlask);
+    
+//       response = answerFromFlask;
+//       res.json(response);
+//     } catch (error) {
+//       console.error("Error communicating with Flask:", error);
+//       res.status(500).send("An error occurred while sending the file to Flask.");
+//     }
+//   });
 
 
 //==============================================
+// 1.
+// const storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//       cb(null, 'uploads/'); 
+//     },
+//     filename: function (req, file, cb) {
+//       const originalname = file.originalname;
+//       cb(null, originalname); 
+//     },
+//   });
+  
+// const upload = multer({ storage: storage });
+
+
 // app.post("/submit", upload.single('file'), async (req, res) => {      
 //     const data = {
 //         query: req.body.query,
